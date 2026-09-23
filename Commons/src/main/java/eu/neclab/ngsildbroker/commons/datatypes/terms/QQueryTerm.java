@@ -10,6 +10,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -282,6 +284,11 @@ public class QQueryTerm implements Serializable {
 		}
 		if ((operant == null || operant.isEmpty())) {
 			return true;
+		}
+		if (isPatternOperator(operator)) {
+			// handled before quote stripping and range/list detection, both would
+			// mangle the regex
+			return calculatePattern(value, unquote(operant), NGSIConstants.QUERY_PATTERNOP.equals(operator));
 		}
 
 		operant = operant != null ? operant.replace("\"", "") : null;
@@ -859,16 +866,8 @@ public class QQueryTerm implements Serializable {
 					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less");
 				}
 				break;
-			case NGSIConstants.QUERY_PATTERNOP:
-				if (operant.matches(LIST) || operant.matches(RANGE)) {
-					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for pattern operation");
-				}
-				break;
-			case NGSIConstants.QUERY_NOTPATTERNOP:
-				if (operant.matches(LIST) || operant.matches(RANGE)) {
-					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for not pattern operation");
-				}
-				break;
+			// no list/range check for pattern operations: the operant is a single regex
+			// and ',' or '..' are legitimate parts of it (e.g. a{1,3} or .*foo..*)
 		}
 	}
 
@@ -3458,6 +3457,12 @@ public class QQueryTerm implements Serializable {
 
 	private List<String[]> splitValues(String input) {
 		List<String[]> values = new ArrayList<>();
+		if (isPatternOperator(operator)) {
+			// a pattern is always a single value, commas are part of the regex
+			String pattern = unquote(input);
+			values.add(new String[] { toJsonPathRegexLiteral(pattern), pattern });
+			return values;
+		}
 		StringBuilder sb = new StringBuilder();
 		boolean inQuotes = false;
 
@@ -3500,6 +3505,47 @@ public class QQueryTerm implements Serializable {
 		}
 
 		return values;
+	}
+
+	private static boolean calculatePattern(Object value, String pattern, boolean match) {
+		Pattern compiled;
+		try {
+			compiled = Pattern.compile(pattern);
+		} catch (PatternSyntaxException e) {
+			return false;
+		}
+		boolean anyMatch = false;
+		if (value instanceof List<?> l) {
+			for (Object item : l) {
+				if (item != null && compiled.matcher(item.toString()).matches()) {
+					anyMatch = true;
+					break;
+				}
+			}
+		} else {
+			anyMatch = compiled.matcher(value.toString()).matches();
+		}
+		return match == anyMatch;
+	}
+
+	private static boolean isPatternOperator(String operator) {
+		return NGSIConstants.QUERY_PATTERNOP.equals(operator) || NGSIConstants.QUERY_NOTPATTERNOP.equals(operator);
+	}
+
+	private static String unquote(String value) {
+		if (value.length() >= 2 && value.charAt(0) == '"' && value.charAt(value.length() - 1) == '"') {
+			return value.substring(1, value.length() - 1);
+		}
+		return value;
+	}
+
+	/**
+	 * like_regex takes a jsonpath string literal, so backslashes and quotes of the
+	 * pattern have to be escaped, otherwise e.g. \d arrives as d at the regex
+	 * engine.
+	 */
+	private static String toJsonPathRegexLiteral(String pattern) {
+		return '"' + pattern.replace("\\", "\\\\").replace("\"", "\\\"") + '"';
 	}
 
 	private String parseSingle(String token) {

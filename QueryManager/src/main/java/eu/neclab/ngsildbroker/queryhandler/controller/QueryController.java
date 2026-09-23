@@ -567,13 +567,10 @@ public class QueryController {
 
 		String decodedUri = URLDecoder.decode(request.absoluteURI(), StandardCharsets.UTF_8);
 		if (qInput != null) {
-			String uri = decodedUri;
-			uri = uri.substring(uri.indexOf("q=") + 2);
-			int index = uri.indexOf('&');
-			if (index != -1) {
-				uri = uri.substring(0, index);
-			}
-			q = uri.replaceAll("\"", "");
+			// quotes are kept: they delimit string values and regex patterns, which may
+			// contain q syntax characters like ( ) ; |
+			String rawQ = HttpUtils.getRawQueryParam(request.query(), "q");
+			q = rawQ != null ? rawQ : qInput;
 		} else {
 			q = null;
 		}

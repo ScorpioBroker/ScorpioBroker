@@ -4,6 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
@@ -450,6 +452,25 @@ public final class HttpUtils {
 
 		}
 		return Uni.createFrom().item(result);
+	}
+
+	/**
+	 * Returns the URL decoded value of a query parameter taken from the raw query
+	 * string, so unencoded ';' inside the value is preserved. The value is split
+	 * from the other parameters before decoding, so an encoded '&amp;' (%26) stays
+	 * part of the value.
+	 */
+	public static String getRawQueryParam(String rawQuery, String name) {
+		if (rawQuery == null) {
+			return null;
+		}
+		String prefix = name + "=";
+		for (String param : rawQuery.split("&")) {
+			if (param.startsWith(prefix)) {
+				return URLDecoder.decode(param.substring(prefix.length()), StandardCharsets.UTF_8);
+			}
+		}
+		return null;
 	}
 
 	public static MultiMap getQueryParamMap(HttpServerRequest request) {
