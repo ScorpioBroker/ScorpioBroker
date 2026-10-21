@@ -9,12 +9,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import com.github.jsonldjava.core.Context;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.storage.PgCapabilities;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import io.vertx.mutiny.sqlclient.Tuple;
 
@@ -23,6 +25,11 @@ import io.vertx.mutiny.sqlclient.Tuple;
  * unchanged, even if it contains q syntax characters.
  */
 public class QQueryTermRegexTest {
+
+	@AfterEach
+	public void resetPgCapabilities() {
+		PgCapabilities.reset();
+	}
 
 	private static QQueryTerm parse(String q) throws ResponseException {
 		return QueryParser.parseQuery(q, new Context());
@@ -192,6 +199,47 @@ public class QQueryTermRegexTest {
 	public void temporalQueryReachesLikeRegex() throws ResponseException {
 		String args = tempSqlAndArgs(parse("status~=\"^(?!active$).*\""));
 		assertTrue(args.contains("like_regex \"^(?!active$).*\""), args);
+	}
+
+	// ---- PostgreSQL version dependent operator ----
+
+	@Test
+	public void pg17UsesStringMethod() throws ResponseException {
+		PgCapabilities.init(170002, "auto");
+		String args = jsonPathArgs(parse("status~=\"foo\""));
+		assertTrue(args.contains("@.\"@value\".string() like_regex \"foo\""), args);
+		args = jsonPathArgs(parse("status!~=\"foo\""));
+		assertTrue(args.contains("@.\"@value\".string() like_regex \"foo\""), args);
+		args = tempSqlAndArgs(parse("status~=\"foo\""));
+		assertTrue(args.contains(".string() like_regex \"foo\""), args);
+		args = tempSqlAndArgs(parse("status!~=\"foo\""));
+		assertTrue(args.contains(".string() like_regex \"foo\""), args);
+	}
+
+	@Test
+	public void pgBelow17HasNoStringMethod() throws ResponseException {
+		PgCapabilities.init(140013, "auto");
+		String args = jsonPathArgs(parse("status~=\"foo\""));
+		assertTrue(args.contains("@.\"@value\" like_regex \"foo\""), args);
+		assertTrue(args.contains("@.\"@id\" like_regex \"foo\""), args);
+		assertFalse(args.contains(".string()"), args);
+		args = jsonPathArgs(parse("status!~=\"foo\""));
+		assertTrue(args.contains("@.\"@value\" like_regex \"foo\""), args);
+		assertFalse(args.contains(".string()"), args);
+		args = tempSqlAndArgs(parse("status~=\"foo\""));
+		assertTrue(args.contains("\" like_regex \"foo\""), args);
+		assertFalse(args.contains(".string()"), args);
+		args = tempSqlAndArgs(parse("status!~=\"foo\""));
+		assertTrue(args.contains("\" like_regex \"foo\""), args);
+		assertFalse(args.contains(".string()"), args);
+	}
+
+	@Test
+	public void pgBelow17DoesNotAffectOtherOperators() throws ResponseException {
+		PgCapabilities.init(140013, "auto");
+		String args = jsonPathArgs(parse("status==\"foo\""));
+		assertFalse(args.contains("like_regex"), args);
+		assertTrue(args.contains("@.\"@value\" == \"foo\"") || args.contains("@.\"@value\"==\"foo\""), args);
 	}
 
 	// ---- in memory evaluation (subscriptions) ----

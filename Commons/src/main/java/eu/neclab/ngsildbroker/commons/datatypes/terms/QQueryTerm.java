@@ -30,6 +30,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.PropertyEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RelationshipEntry;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.storage.PgCapabilities;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -1469,10 +1470,10 @@ public class QQueryTerm implements Serializable {
 		List<String[]> tokens = splitValues(operant);
 
 		if (operator.equals(NGSIConstants.QUERY_PATTERNOP)) {
-			operatorTBU = ".string() like_regex ";
+			operatorTBU = patternOperator();
 			regex = true;
 		} else if (operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
-			operatorTBU = ".string() like_regex ";
+			operatorTBU = patternOperator();
 			regex = true;
 			not = true;
 		} else if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
@@ -3540,6 +3541,14 @@ public class QQueryTerm implements Serializable {
 	}
 
 	/**
+	 * jsonpath operator for ~= / !~=. {@code .string()} lets the pattern match
+	 * non string values too, but it only exists in PostgreSQL 17+.
+	 */
+	private static String patternOperator() {
+		return PgCapabilities.hasJsonPathStringMethod() ? ".string() like_regex " : " like_regex ";
+	}
+
+	/**
 	 * like_regex takes a jsonpath string literal, so backslashes and quotes of the
 	 * pattern have to be escaped, otherwise e.g. \d arrives as d at the regex
 	 * engine.
@@ -3754,10 +3763,10 @@ public class QQueryTerm implements Serializable {
 			boolean regex = false;
 			List<String[]> tokens = splitValues(operant);
 			if (operator.equals(NGSIConstants.QUERY_PATTERNOP)) {
-				operatorTBU = ".string() like_regex ";
+				operatorTBU = patternOperator();
 				regex = true;
 			} else if (operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
-				operatorTBU = ".string() like_regex ";
+				operatorTBU = patternOperator();
 				regex = true;
 				not = true;
 			} else if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
