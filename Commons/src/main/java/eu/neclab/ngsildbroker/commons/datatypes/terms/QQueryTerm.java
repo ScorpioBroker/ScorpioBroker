@@ -1335,6 +1335,18 @@ public class QQueryTerm implements Serializable {
 		return value;
 	}
 
+	/**
+	 * Vocab values are expanded as IRIs, a pattern is not: the expansion would put
+	 * a prefix in front of the regex (breaking e.g. a leading (?i)) and skip the
+	 * jsonpath escaping.
+	 */
+	private String prepVocabForJsonPath(String[] token, boolean regex) {
+		if (regex) {
+			return prepValueForJsonPath(token[0], true);
+		}
+		return '"' + linkHeaders.expandIri(token[1], false, true, null, null) + '"';
+	}
+
 	private int parseAttribute(StringBuilder result, int dollar, Tuple tuple, String attrib, boolean localOnly,
 			boolean isDist, int entityLevelCounter, DataSetIdTerm dataSetIdTerm) {
 
@@ -1597,9 +1609,8 @@ public class QQueryTerm implements Serializable {
 			vocabQBuilder.append(NGSIConstants.JSON_LD_ID);
 			vocabQBuilder.append('"');
 			vocabQBuilder.append(operatorTBU);
-			vocabQBuilder.append('"');
-			vocabQBuilder.append(linkHeaders.expandIri(token[1], false, true, null, null));
-			vocabQBuilder.append("\" || ");
+			vocabQBuilder.append(prepVocabForJsonPath(token, regex));
+			vocabQBuilder.append(" || ");
 
 			valueQBuilder.append("@.\"");
 			valueQBuilder.append(NGSIConstants.JSON_LD_VALUE);
@@ -4088,15 +4099,11 @@ public class QQueryTerm implements Serializable {
 				result.append(operatorTBU);
 
 				if (tokens.size() == 1) {
-					result.append('"');
-					result.append(linkHeaders.expandIri(tokens.get(0)[1], false, true, null, null));
-					result.append('"');
+					result.append(prepVocabForJsonPath(tokens.get(0), regex));
 				} else {
 					result.append('[');
 					for (String[] token : tokens) {
-						result.append('"');
-						result.append(linkHeaders.expandIri(token[1], false, true, null, null));
-						result.append('"');
+						result.append(prepVocabForJsonPath(token, regex));
 						result.append(',');
 					}
 					result.setCharAt(result.length(), ']');

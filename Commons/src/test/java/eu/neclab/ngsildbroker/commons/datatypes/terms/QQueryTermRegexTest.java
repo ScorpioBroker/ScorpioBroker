@@ -201,6 +201,20 @@ public class QQueryTermRegexTest {
 		assertTrue(args.contains("like_regex \"^(?!active$).*\""), args);
 	}
 
+	@Test
+	public void vocabPatternIsNotExpandedAsIri() throws ResponseException {
+		String args = jsonPathArgs(parse("name~=\"(?i).*DUCT.*\""));
+		assertTrue(args.contains("hasVocab\"[*] ? (@.\"@id\".string() like_regex \"(?i).*DUCT.*\")"), args);
+		args = tempSqlAndArgs(parse("name~=\"(?i).*DUCT.*\""));
+		assertTrue(args.contains("\"@id\".string() like_regex \"(?i).*DUCT.*\""), args);
+	}
+
+	@Test
+	public void vocabPatternIsEscaped() throws ResponseException {
+		String args = jsonPathArgs(parse("status~=\"^\\d+$\""));
+		assertTrue(args.contains("hasVocab\"[*] ? (@.\"@id\".string() like_regex \"^\\\\d+$\")"), args);
+	}
+
 	// ---- PostgreSQL version dependent operator ----
 
 	@Test
