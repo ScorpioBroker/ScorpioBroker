@@ -38,8 +38,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -125,14 +123,8 @@ public class HistoryController {
 		}
 		String q;
 		if (qInput != null) {
-			try {
-				q = URLDecoder.decode(request.absoluteURI().split("q=")[1].split("&")[0], "UTF-8");
-			} catch (UnsupportedEncodingException e) {
-				return Uni.createFrom()
-						.item(HttpUtils.handleControllerExceptions(
-								new ResponseException(ErrorType.BadRequestData, "failed to decode q query"),
-								HttpUtils.getTenant(request)));
-			}
+			String rawQ = HttpUtils.getRawQueryParam(request.query(), "q");
+			q = rawQ != null ? rawQ : qInput;
 		} else {
 			q = null;
 		}

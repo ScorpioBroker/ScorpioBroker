@@ -67,12 +67,25 @@ public class QueryParser {
 		String attribName = "";
 		StringBuilder operator = new StringBuilder();
 		String operant = "";
-		input = URLDecoder.decode(input, StandardCharsets.UTF_8);
+		// input is expected to be already URL decoded (by JAX-RS or the controller);
+		// decoding again would e.g. turn a '+' in a regex into a space
+		boolean inQuotes = false;
 		OfInt it = input.chars().iterator();
 		int currentJoinLevel = 0;
 
 		while (it.hasNext()) {
 			char b = (char) it.next().intValue();
+			if (inQuotes) {
+				// everything inside a quoted operant is part of the value, including q
+				// syntax characters like ( ) ; | { } which are common in regex patterns
+				operant += b;
+				if (b == '\\' && it.hasNext()) {
+					operant += (char) it.next().intValue();
+				} else if (b == '"') {
+					inQuotes = false;
+				}
+				continue;
+			}
 			if (b == '(') {
 				QQueryTerm child = new QQueryTerm(context);
 				current.setFirstChild(child);
@@ -171,10 +184,16 @@ public class QueryParser {
 					}
 					readingOperant = true;
 					operant += (char) b;
+					if (b == '"') {
+						inQuotes = true;
+					}
 				}
 
 			}
 
+		}
+		if (inQuotes) {
+			throw new ResponseException(ErrorType.BadRequestData, "Unterminated quoted value in query: " + input);
 		}
 		if (readingAttrib) {
 			current.setAttribute(attribName);

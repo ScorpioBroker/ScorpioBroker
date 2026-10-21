@@ -10,6 +10,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -28,6 +30,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.PropertyEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RelationshipEntry;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.storage.PgCapabilities;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -282,6 +285,11 @@ public class QQueryTerm implements Serializable {
 		}
 		if ((operant == null || operant.isEmpty())) {
 			return true;
+		}
+		if (isPatternOperator(operator)) {
+			// handled before quote stripping and range/list detection, both would
+			// mangle the regex
+			return calculatePattern(value, unquote(operant), NGSIConstants.QUERY_PATTERNOP.equals(operator));
 		}
 
 		operant = operant != null ? operant.replace("\"", "") : null;
@@ -859,16 +867,8 @@ public class QQueryTerm implements Serializable {
 					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less");
 				}
 				break;
-			case NGSIConstants.QUERY_PATTERNOP:
-				if (operant.matches(LIST) || operant.matches(RANGE)) {
-					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for pattern operation");
-				}
-				break;
-			case NGSIConstants.QUERY_NOTPATTERNOP:
-				if (operant.matches(LIST) || operant.matches(RANGE)) {
-					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for not pattern operation");
-				}
-				break;
+			// no list/range check for pattern operations: the operant is a single regex
+			// and ',' or '..' are legitimate parts of it (e.g. a{1,3} or .*foo..*)
 		}
 	}
 
@@ -1335,6 +1335,18 @@ public class QQueryTerm implements Serializable {
 		return value;
 	}
 
+	/**
+	 * Vocab values are expanded as IRIs, a pattern is not: the expansion would put
+	 * a prefix in front of the regex (breaking e.g. a leading (?i)) and skip the
+	 * jsonpath escaping.
+	 */
+	private String prepVocabForJsonPath(String[] token, boolean regex) {
+		if (regex) {
+			return prepValueForJsonPath(token[0], true);
+		}
+		return '"' + linkHeaders.expandIri(token[1], false, true, null, null) + '"';
+	}
+
 	private int parseAttribute(StringBuilder result, int dollar, Tuple tuple, String attrib, boolean localOnly,
 			boolean isDist, int entityLevelCounter, DataSetIdTerm dataSetIdTerm) {
 
@@ -1470,10 +1482,10 @@ public class QQueryTerm implements Serializable {
 		List<String[]> tokens = splitValues(operant);
 
 		if (operator.equals(NGSIConstants.QUERY_PATTERNOP)) {
-			operatorTBU = ".string() like_regex ";
+			operatorTBU = patternOperator();
 			regex = true;
 		} else if (operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
-			operatorTBU = ".string() like_regex ";
+			operatorTBU = patternOperator();
 			regex = true;
 			not = true;
 		} else if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
@@ -1597,9 +1609,8 @@ public class QQueryTerm implements Serializable {
 			vocabQBuilder.append(NGSIConstants.JSON_LD_ID);
 			vocabQBuilder.append('"');
 			vocabQBuilder.append(operatorTBU);
-			vocabQBuilder.append('"');
-			vocabQBuilder.append(linkHeaders.expandIri(token[1], false, true, null, null));
-			vocabQBuilder.append("\" || ");
+			vocabQBuilder.append(prepVocabForJsonPath(token, regex));
+			vocabQBuilder.append(" || ");
 
 			valueQBuilder.append("@.\"");
 			valueQBuilder.append(NGSIConstants.JSON_LD_VALUE);
@@ -3458,6 +3469,12 @@ public class QQueryTerm implements Serializable {
 
 	private List<String[]> splitValues(String input) {
 		List<String[]> values = new ArrayList<>();
+		if (isPatternOperator(operator)) {
+			// a pattern is always a single value, commas are part of the regex
+			String pattern = unquote(input);
+			values.add(new String[] { toJsonPathRegexLiteral(pattern), pattern });
+			return values;
+		}
 		StringBuilder sb = new StringBuilder();
 		boolean inQuotes = false;
 
@@ -3500,6 +3517,55 @@ public class QQueryTerm implements Serializable {
 		}
 
 		return values;
+	}
+
+	private static boolean calculatePattern(Object value, String pattern, boolean match) {
+		Pattern compiled;
+		try {
+			compiled = Pattern.compile(pattern);
+		} catch (PatternSyntaxException e) {
+			return false;
+		}
+		boolean anyMatch = false;
+		if (value instanceof List<?> l) {
+			for (Object item : l) {
+				if (item != null && compiled.matcher(item.toString()).matches()) {
+					anyMatch = true;
+					break;
+				}
+			}
+		} else {
+			anyMatch = compiled.matcher(value.toString()).matches();
+		}
+		return match == anyMatch;
+	}
+
+	private static boolean isPatternOperator(String operator) {
+		return NGSIConstants.QUERY_PATTERNOP.equals(operator) || NGSIConstants.QUERY_NOTPATTERNOP.equals(operator);
+	}
+
+	private static String unquote(String value) {
+		if (value.length() >= 2 && value.charAt(0) == '"' && value.charAt(value.length() - 1) == '"') {
+			return value.substring(1, value.length() - 1);
+		}
+		return value;
+	}
+
+	/**
+	 * jsonpath operator for ~= / !~=. {@code .string()} lets the pattern match
+	 * non string values too, but it only exists in PostgreSQL 17+.
+	 */
+	private static String patternOperator() {
+		return PgCapabilities.hasJsonPathStringMethod() ? ".string() like_regex " : " like_regex ";
+	}
+
+	/**
+	 * like_regex takes a jsonpath string literal, so backslashes and quotes of the
+	 * pattern have to be escaped, otherwise e.g. \d arrives as d at the regex
+	 * engine.
+	 */
+	private static String toJsonPathRegexLiteral(String pattern) {
+		return '"' + pattern.replace("\\", "\\\\").replace("\"", "\\\"") + '"';
 	}
 
 	private String parseSingle(String token) {
@@ -3708,10 +3774,10 @@ public class QQueryTerm implements Serializable {
 			boolean regex = false;
 			List<String[]> tokens = splitValues(operant);
 			if (operator.equals(NGSIConstants.QUERY_PATTERNOP)) {
-				operatorTBU = ".string() like_regex ";
+				operatorTBU = patternOperator();
 				regex = true;
 			} else if (operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
-				operatorTBU = ".string() like_regex ";
+				operatorTBU = patternOperator();
 				regex = true;
 				not = true;
 			} else if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
@@ -4033,15 +4099,11 @@ public class QQueryTerm implements Serializable {
 				result.append(operatorTBU);
 
 				if (tokens.size() == 1) {
-					result.append('"');
-					result.append(linkHeaders.expandIri(tokens.get(0)[1], false, true, null, null));
-					result.append('"');
+					result.append(prepVocabForJsonPath(tokens.get(0), regex));
 				} else {
 					result.append('[');
 					for (String[] token : tokens) {
-						result.append('"');
-						result.append(linkHeaders.expandIri(token[1], false, true, null, null));
-						result.append('"');
+						result.append(prepVocabForJsonPath(token, regex));
 						result.append(',');
 					}
 					result.setCharAt(result.length(), ']');

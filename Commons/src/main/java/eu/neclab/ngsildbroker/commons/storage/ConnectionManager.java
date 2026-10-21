@@ -88,16 +88,43 @@ public class ConnectionManager {
 	@ConfigProperty(name = "scorpio.postgres.disablejit", defaultValue = "true")
 	boolean disableJIT;
 
+	@ConfigProperty(name = "scorpio.postgres.jsonpath-string-method", defaultValue = "auto")
+	String jsonPathStringMethod;
+
 	Set<String> currentlyRunningMigrations = Sets.newHashSet();
 
 	@PostConstruct
 	void setup() throws URISyntaxException {
 		String jitValue = disableJIT ? "off" : "on";
 		executeQuery(null, "ALTER USER CURRENT_USER SET jit = " + jitValue, null, false).await().indefinitely();
+		detectPgCapabilities();
 
 		URI uri = new URI(reactiveDefaultUrl);
 		reactiveBaseUrl = uri.getScheme() + "://" + uri.getHost() + ":" + uri.getPort() + "/";
 		tenant2Client.put(AppConstants.INTERNAL_NULL_KEY, pgClient);
+	}
+
+	private void detectPgCapabilities() {
+		int versionNum = -1;
+		try {
+			// SHOW returns text, e.g. "140013"
+			versionNum = Integer.parseInt(executeQuery(null, "SHOW server_version_num", null, false).await()
+					.indefinitely().iterator().next().getString(0));
+		} catch (Exception e) {
+			logger.warn("Could not determine PostgreSQL version", e);
+		}
+		String mode = jsonPathStringMethod;
+		if (versionNum == -1 && !"true".equalsIgnoreCase(mode) && !"false".equalsIgnoreCase(mode)) {
+			// keep the default (PG17+ behaviour)
+			mode = "true";
+		}
+		boolean stringMethod = PgCapabilities.init(versionNum, mode);
+		logger.info("PostgreSQL server_version_num={}, jsonpath .string() method {} (scorpio.postgres.jsonpath-string-method={})",
+				versionNum, stringMethod ? "enabled" : "disabled", jsonPathStringMethod);
+		if (!stringMethod) {
+			logger.warn(
+					"jsonpath .string() is not available (PostgreSQL < 17): ~= and !~= in q only match string values, numbers and booleans never match");
+		}
 	}
 
 	private String reactiveBaseUrl;
